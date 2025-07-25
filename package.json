@@ -3,6 +3,7 @@
   "displayName": "ARXML Reader",
   "description": "Enhanced ARXML file viewer for AUTOSAR development with ECUC and NVM support",
   "version": "0.0.1",
+  "publisher": "sybinh",
   "engines": {
     "vscode": "^1.54.0"
   },
