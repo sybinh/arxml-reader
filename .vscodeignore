@@ -14,4 +14,4 @@ test-sample.arxml
 test-output.artext
 package_backup.json
 .github/**
-node_modules/**
+# node_modules/** removed to ensure dependencies are packaged

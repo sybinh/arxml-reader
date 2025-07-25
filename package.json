@@ -12,7 +12,15 @@
     "Formatters",
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "*",
+    "onCommand:arxml-reader.openAsReadable",
+    "onCommand:arxml-reader.showOriginalXml", 
+    "onCommand:arxml-reader.changeOpenMode",
+    "onCommand:arxml-reader.clearCache",
+    "onCommand:arxml-reader.showCacheStats",
+    "onLanguage:arxml"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "languages": [
