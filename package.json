@@ -12,9 +12,7 @@
     "Formatters",
     "Other"
   ],
-  "activationEvents": [
-    "onLanguage:arxml"
-  ],
+  "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "languages": [
