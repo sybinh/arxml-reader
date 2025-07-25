@@ -1,0 +1,7 @@
+[
+  {
+    "pattern": "**/*.arxml",
+    "url": "",
+    "type": "xsd"
+  }
+]

@@ -1,0 +1,143 @@
+{
+  "name": "arxml-reader",
+  "displayName": "ARXML Reader",
+  "description": "Enhanced ARXML file viewer for AUTOSAR development with ECUC and NVM support",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.54.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:arxml"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "artext",
+        "aliases": ["Artext", "artext"],
+        "extensions": [".artext"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "arxml",
+        "aliases": ["ARXML", "arxml"],
+        "extensions": [".arxml"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "artext",
+        "scopeName": "source.artext",
+        "path": "./syntaxes/artext.tmGrammar.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "arxml-reader.openAsReadable",
+        "title": "Open as Readable Text",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "arxml-reader.showOriginalXml",
+        "title": "Show Original XML",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "arxml-reader.changeOpenMode",
+        "title": "Change ARXML Open Mode",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "arxml-reader.clearCache",
+        "title": "Clear ARXML Cache (Free RAM)",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "arxml-reader.showCacheStats",
+        "title": "Show ARXML Cache Stats",
+        "icon": "$(info)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceExtname == .arxml",
+          "command": "arxml-reader.showOriginalXml",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .arxml",
+          "command": "arxml-reader.showOriginalXml",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "ARXML Reader",
+      "properties": {
+        "arxml-reader.openMode": {
+          "type": "string",
+          "enum": ["both", "readable-only", "original-only"],
+          "enumDescriptions": [
+            "Open both original XML and readable text (as tabs)",
+            "Open only the readable text format",
+            "Open only the original XML (disable conversion)"
+          ],
+          "default": "both",
+          "description": "How to open ARXML files"
+        },
+        "arxml-reader.maxFileSize": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum file size in MB to process automatically (larger files will show warning)"
+        },
+        "arxml-reader.enableCaching": {
+          "type": "boolean",
+          "default": true,
+          "description": "Cache converted content to improve performance (uses more RAM)"
+        },
+        "arxml-reader.streamProcessing": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable streaming for very large files (slower but uses less RAM)"
+        },
+        "arxml-reader.disableXmlValidation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Disable XML validation for ARXML files to prevent schema errors"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.54.0",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@types/xml2js": "^0.4.14",
+    "xml2js": "^0.6.2"
+  }
+}

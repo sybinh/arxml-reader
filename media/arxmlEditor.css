@@ -1,0 +1,164 @@
+body {
+    padding: 0;
+    margin: 0;
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    font-weight: var(--vscode-font-weight);
+}
+
+.toolbar {
+    padding: 8px 12px;
+    background-color: var(--vscode-editorWidget-background);
+    border-bottom: 1px solid var(--vscode-widget-border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.button {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    transition: background-color 0.1s ease;
+}
+
+.button:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.button:active {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+select {
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    border: 1px solid var(--vscode-dropdown-border);
+    padding: 4px 8px;
+    border-radius: 2px;
+    font-size: 13px;
+}
+
+.content {
+    height: calc(100vh - 50px);
+    overflow: auto;
+    padding: 12px;
+}
+
+.artext-content {
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    line-height: 1.4;
+    white-space: pre;
+    margin: 0;
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    overflow-x: auto;
+}
+
+/* Syntax highlighting for Artext */
+.keyword {
+    color: var(--vscode-symbolIcon-keywordForeground, #569cd6);
+}
+
+.string {
+    color: var(--vscode-symbolIcon-stringForeground, #ce9178);
+}
+
+.number {
+    color: var(--vscode-symbolIcon-numberForeground, #b5cea8);
+}
+
+.comment {
+    color: var(--vscode-symbolIcon-operatorForeground, #6a9955);
+    font-style: italic;
+}
+
+.hex-value {
+    color: var(--vscode-symbolIcon-numberForeground, #b5cea8);
+    font-weight: bold;
+}
+
+.reference {
+    color: var(--vscode-symbolIcon-classForeground, #4ec9b0);
+}
+
+.annotation {
+    color: var(--vscode-symbolIcon-operatorForeground, #dcdcaa);
+}
+
+.loading {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--vscode-editorWidget-background);
+    padding: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--vscode-widget-border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.error {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--vscode-inputValidation-errorBackground);
+    color: var(--vscode-inputValidation-errorForeground);
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    padding: 20px;
+    border-radius: 4px;
+    max-width: 80%;
+    text-align: center;
+}
+
+.codicon {
+    font-family: codicon;
+}
+
+/* Animation for loading spinner */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.codicon-modifier-spin {
+    animation: spin 1.4s linear infinite;
+}
+
+.toggle-button[data-mode="original"] {
+    background-color: var(--vscode-button-secondaryBackground, #5a5d5e);
+    color: var(--vscode-button-secondaryForeground, #ffffff);
+    border: 1px solid var(--vscode-button-border, #464647);
+}
+
+.toggle-button[data-mode="original"]:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground, #656565);
+}
+
+.original-content {
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    line-height: 1.4;
+    white-space: pre;
+    margin: 0;
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    overflow: auto;
+    border: 1px solid var(--vscode-panel-border, transparent);
+    border-radius: 3px;
+    padding: 8px;
+}

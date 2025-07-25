@@ -1,0 +1,107 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "Artext",
+    "patterns": [
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#hex-values"
+        },
+        {
+            "include": "#annotations"
+        },
+        {
+            "include": "#references"
+        }
+    ],
+    "repository": {
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "keyword.control.artext",
+                    "match": "\\b(schema|package|module|context)\\b"
+                },
+                {
+                    "name": "entity.name.type.artext",
+                    "match": "\\b(true|false)\\b"
+                }
+            ]
+        },
+        "strings": {
+            "name": "string.quoted.double.artext",
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [
+                {
+                    "name": "constant.character.escape.artext",
+                    "match": "\\\\."
+                }
+            ]
+        },
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.block.artext",
+                    "begin": "/\\*",
+                    "end": "\\*/"
+                },
+                {
+                    "name": "comment.line.double-slash.artext",
+                    "match": "//.*$"
+                }
+            ]
+        },
+        "numbers": {
+            "name": "constant.numeric.artext",
+            "match": "\\b\\d+\\b"
+        },
+        "hex-values": {
+            "name": "constant.numeric.hex.artext",
+            "match": "\\b0x[0-9A-Fa-f]+\\b"
+        },
+        "annotations": {
+            "patterns": [
+                {
+                    "name": "support.type.property-name.artext",
+                    "begin": "\\[",
+                    "end": "\\]",
+                    "patterns": [
+                        {
+                            "include": "#strings"
+                        }
+                    ]
+                },
+                {
+                    "name": "support.type.property-name.artext",
+                    "begin": "<",
+                    "end": ">",
+                    "patterns": [
+                        {
+                            "match": "==",
+                            "name": "keyword.operator.comparison.artext"
+                        },
+                        {
+                            "match": "&&",
+                            "name": "keyword.operator.logical.artext"
+                        }
+                    ]
+                }
+            ]
+        },
+        "references": {
+            "name": "entity.name.function.artext",
+            "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\.[A-Za-z_][A-Za-z0-9_\\.]*\\b"
+        }
+    },
+    "scopeName": "source.artext"
+}
