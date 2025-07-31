@@ -2,6 +2,26 @@
 
 Enhanced ARXML file viewer for AUTOSAR development. This extension automatically converts ARXML files to a readable text format while preserving all VS Code editor features.
 
+## ⚠️ **Important Disclaimer**
+
+**Please note:** Despite the name "ARXML Reader", this extension currently supports only **ECUC (ECU Configuration) values** within ARXML files. The name suggests broader ARXML support, but we're starting with ECUC elements and will expand to other AUTOSAR elements in future versions.
+
+**Currently Supported:** 
+- ECUC configuration files (EcuC_EcucValues.arxml, module configurations, etc.)
+- ECUC-MODULE-CONFIGURATION-VALUES, ECUC-CONTAINER-VALUE, etc.
+
+**Not Yet Supported:** 
+- Software component descriptions (.swc files)
+- Interface definitions 
+- Data type definitions
+- System configurations
+- Composition structures
+- And other AUTOSAR elements
+
+Future versions will expand support to provide truly comprehensive ARXML reading capabilities. Thank you for your understanding!
+
+---
+
 ## Features
 
 ### 🔧 Core Features
@@ -12,7 +32,7 @@ Enhanced ARXML file viewer for AUTOSAR development. This extension automatically
 - **Original XML Access**: Command to view the original XML when needed
 - **Schema Validation Disabled**: Prevents XML validation errors from missing AUTOSAR XSD schemas
 
-### 📂 Supported Elements
+### 📂 Supported Elements (ECUC Only)
 
 - `ECUC-MODULE-CONFIGURATION-VALUES` → module declarations
 - `ECUC-CONTAINER-VALUE` → container blocks  

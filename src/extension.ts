@@ -1,8 +1,79 @@
 import * as vscode from 'vscode';
 import { ArxmlReadableProvider } from './arxmlReadableProvider';
 
-export function activate(context: vscode.ExtensionContext) {
+/**
+ * Check version and clean up old installations
+ */
+async function checkVersionAndCleanup(context: vscode.ExtensionContext) {
+	try {
+		const currentVersion = context.extension.packageJSON.version;
+		const lastVersion = context.globalState.get<string>('arxmlReader.lastVersion');
+		
+		// If this is the first install or a version upgrade
+		if (!lastVersion || lastVersion !== currentVersion) {
+			// Store the current version
+			await context.globalState.update('arxmlReader.lastVersion', currentVersion);
+			
+			// Show disclaimer for new users or version updates
+			const disclaimerShown = context.globalState.get<boolean>('arxmlReader.disclaimerShown');
+			if (!disclaimerShown) {
+				const response = await vscode.window.showInformationMessage(
+					'📋 ARXML Reader Disclaimer: Despite the name "ARXML Reader", this extension currently supports only ECUC configuration values. Other AUTOSAR elements (software components, interfaces, data types, etc.) will be added in future versions.',
+					'Got it!', 'Don\'t show again'
+				);
+				
+				if (response === 'Don\'t show again') {
+					await context.globalState.update('arxmlReader.disclaimerShown', true);
+				}
+			}
+			
+			if (lastVersion) {
+				// This is an upgrade
+				vscode.window.showInformationMessage(
+					`ARXML Reader updated from v${lastVersion} to v${currentVersion}!`
+				);
+			} else {
+				// This is a fresh install
+				vscode.window.showInformationMessage(
+					`ARXML Reader v${currentVersion} installed successfully!`
+				);
+			}
+			
+			// Check for old versions with different IDs
+			const allExtensions = vscode.extensions.all;
+			const oldVersions = allExtensions.filter(ext => {
+				const id = ext.id.toLowerCase();
+				return id.includes('arxml-reader') && id !== 'sybinh.arxml-reader';
+			});
+			
+			if (oldVersions.length > 0) {
+				const oldIds = oldVersions.map(ext => ext.id).join(', ');
+				const response = await vscode.window.showWarningMessage(
+					`Found old ARXML Reader installations: ${oldIds}. These should be uninstalled to avoid conflicts.`,
+					'Show Instructions', 'Ignore'
+				);
+				
+				if (response === 'Show Instructions') {
+					vscode.env.openExternal(vscode.Uri.parse('command:workbench.action.showRuntimeExtensions'));
+					vscode.window.showInformationMessage(
+						'In the Extensions view, search for "arxml-reader" and uninstall any versions other than "sybinh.arxml-reader"'
+					);
+				}
+			}
+		}
+	} catch (error) {
+		console.warn('Error in version check:', error);
+	}
+}
+
+export async function activate(context: vscode.ExtensionContext) {
 	console.log('ARXML Reader extension is now active!');
+	
+	// Show activation message for debugging
+	vscode.window.showInformationMessage('ARXML Reader extension activated!');
+
+	// Check for version updates and clean up old installations
+	await checkVersionAndCleanup(context);
 
 	// Configure settings for ARXML files to disable XML validation
 	const config = vscode.workspace.getConfiguration();
@@ -36,6 +107,19 @@ export function activate(context: vscode.ExtensionContext) {
 				// Keep the original XML open, do nothing
 				return;
 			}
+
+			// Check if the file contains ECUC content before opening readable tab
+			const readableUri = vscode.Uri.parse(`arxml-readable:${document.uri.toString()}.artext`);
+			const hasEcuc = await arxmlReadableProvider.hasEcucContent(readableUri);
+			
+			if (!hasEcuc) {
+				// File doesn't contain ECUC content, show notification and keep only original XML
+				vscode.window.showWarningMessage(
+					`This ARXML file doesn't contain ECUC configuration values. ARXML Reader currently supports only ECUC elements. Use "Show Readable Text" command to see the disclaimer.`,
+					'Got it'
+				);
+				return; // Don't open readable tab
+			}
 			
 			if (openMode === 'readable-only') {
 				// Close the original XML document and open only readable
@@ -44,7 +128,6 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				
 				// Create and open readable document
-				const readableUri = vscode.Uri.parse(`arxml-readable:${document.uri.toString()}.artext`);
 				const readableDoc = await vscode.workspace.openTextDocument(readableUri);
 				await vscode.window.showTextDocument(readableDoc, { 
 					preserveFocus: false 
@@ -54,7 +137,6 @@ export function activate(context: vscode.ExtensionContext) {
 			
 			if (openMode === 'both') {
 				// Keep original and also open readable in the same area
-				const readableUri = vscode.Uri.parse(`arxml-readable:${document.uri.toString()}.artext`);
 				const readableDoc = await vscode.workspace.openTextDocument(readableUri);
 				await vscode.window.showTextDocument(readableDoc, { 
 					viewColumn: vscode.ViewColumn.Active,
@@ -114,6 +196,34 @@ export function activate(context: vscode.ExtensionContext) {
 		});
 	});
 
+	// Register command to show readable text (complement to showOriginalXml)
+	const showReadableCommand = vscode.commands.registerCommand('arxml-reader.showReadableText', async (uri?: vscode.Uri) => {
+		if (!uri && vscode.window.activeTextEditor) {
+			const activeDoc = vscode.window.activeTextEditor.document;
+			if (activeDoc.uri.scheme === 'file' && activeDoc.uri.fsPath.toLowerCase().endsWith('.arxml')) {
+				// Already have the original ARXML file URI
+				uri = activeDoc.uri;
+			} else if (activeDoc.uri.scheme === 'arxml-readable') {
+				// Extract original URI from readable document
+				const originalUriString = activeDoc.uri.path.slice(0, -7); // Remove '.artext' suffix
+				uri = vscode.Uri.parse(originalUriString);
+			}
+		}
+		if (!uri) {
+			vscode.window.showWarningMessage('No ARXML file selected');
+			return;
+		}
+
+		// Create and open readable document (this will show disclaimer if no ECUC content)
+		const readableUri = vscode.Uri.parse(`arxml-readable:${uri.toString()}.artext`);
+		const readableDoc = await vscode.workspace.openTextDocument(readableUri);
+		await vscode.window.showTextDocument(readableDoc, { 
+			viewColumn: vscode.ViewColumn.Active,
+			preserveFocus: false 
+		});
+		await vscode.languages.setTextDocumentLanguage(readableDoc, 'artext');
+	});
+
 	// Register command to change open mode
 	const changeOpenModeCommand = vscode.commands.registerCommand('arxml-reader.changeOpenMode', async () => {
 		const config = vscode.workspace.getConfiguration('arxml-reader');
@@ -149,7 +259,7 @@ export function activate(context: vscode.ExtensionContext) {
 		);
 	});
 
-	context.subscriptions.push(openHandler, openAsReadableCommand, showOriginalCommand, changeOpenModeCommand, clearCacheCommand, showCacheStatsCommand);
+	context.subscriptions.push(openHandler, openAsReadableCommand, showOriginalCommand, showReadableCommand, changeOpenModeCommand, clearCacheCommand, showCacheStatsCommand);
 }
 
 // This method is called when your extension is deactivated

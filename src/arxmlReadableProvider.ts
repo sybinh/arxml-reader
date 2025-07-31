@@ -46,7 +46,7 @@ export class ArxmlReadableProvider implements vscode.TextDocumentContentProvider
             const xmlContent = document.getText();
             
             // Get RAM-related configurations
-            const maxFileSize = config.get<number>('maxFileSize', 10) * 1024 * 1024; // Convert MB to bytes
+            const maxFileSize = config.get<number>('maxFileSize', 50) * 1024 * 1024; // Convert MB to bytes
             const streamProcessing = config.get<boolean>('streamProcessing', false);
             const fileSizeBytes = Buffer.byteLength(xmlContent, 'utf8');
             
@@ -113,6 +113,9 @@ export class ArxmlReadableProvider implements vscode.TextDocumentContentProvider
             return readableContent;
             
         } catch (error) {
+            console.error('ARXML conversion error:', error);
+            console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+            
             const errorMessage = `Error converting ARXML file: ${error instanceof Error ? error.message : 'Unknown error'}`;
             // Don't cache errors if caching is disabled
             if (enableCaching) {
@@ -121,6 +124,28 @@ export class ArxmlReadableProvider implements vscode.TextDocumentContentProvider
             return errorMessage;
         } finally {
             this._processing.delete(cacheKey);
+        }
+    }
+
+    /**
+     * Check if an ARXML file contains ECUC content
+     */
+    async hasEcucContent(uri: vscode.Uri): Promise<boolean> {
+        try {
+            // Extract the original URI from the virtual URI
+            const originalUriString = uri.path.slice(0, -7); // Remove '.artext' suffix
+            const originalUri = vscode.Uri.parse(originalUriString);
+            
+            // Read the original ARXML file
+            const document = await vscode.workspace.openTextDocument(originalUri);
+            const xmlContent = document.getText();
+            
+            // Create converter and check for ECUC content
+            const converter = new ArxmlConverter();
+            return await converter.hasEcucContent(xmlContent);
+        } catch (error) {
+            console.error('Error checking ECUC content:', error);
+            return false; // Assume no ECUC content on error
         }
     }
 

@@ -46,49 +46,174 @@ export class ArxmlConverter {
         });
     }
 
+    /**
+     * Quickly check if an ARXML file contains ECUC content without full conversion
+     */
+    async hasEcucContent(xmlContent: string): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            const parserOptions = {
+                explicitArray: true,
+                mergeAttrs: false,
+                explicitRoot: true,
+                async: true,
+                normalizeTags: false,
+                normalize: false,
+                explicitCharkey: false,
+                trim: true,
+                ignoreAttrs: false
+            };
+            
+            parseString(xmlContent, parserOptions, (err, result) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                try {
+                    const hasEcuc = this.checkForEcucContent(result);
+                    resolve(hasEcuc);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        });
+    }
+
     private transformToArtext(xmlObj: any): string {
         const output: string[] = [];
+        let hasEcucContent = false;
 
-        if (xmlObj.AUTOSAR) {
-            const autosar = xmlObj.AUTOSAR;
-            
-            // Extract schema information
-            if (autosar.$?.['xsi:schemaLocation']) {
-                const schemaLocation = autosar.$['xsi:schemaLocation'];
-                const schemaVersion = this.extractSchemaVersion(schemaLocation);
-                output.push(`schema ${schemaVersion}\n`);
+        // Add safety check and debugging
+        if (!xmlObj) {
+            output.push('// Error: XML parsing result is null or undefined\n');
+            return output.join('');
+        }
+
+        if (!xmlObj.AUTOSAR) {
+            output.push('// Error: No AUTOSAR root element found in XML\n');
+            output.push(`// Available root elements: ${Object.keys(xmlObj).join(', ')}\n`);
+            return output.join('');
+        }
+
+        const autosar = xmlObj.AUTOSAR;
+        
+        // Extract schema information
+        if (autosar.$?.['xsi:schemaLocation']) {
+            const schemaLocation = autosar.$['xsi:schemaLocation'];
+            const schemaVersion = this.extractSchemaVersion(schemaLocation);
+            output.push(`schema ${schemaVersion}\n`);
+        }
+
+        // Process AR-PACKAGES
+        if (autosar['AR-PACKAGES']) {
+            const packages = this.ensureArray(autosar['AR-PACKAGES']);
+            for (const packageGroup of packages) {
+                if (packageGroup['AR-PACKAGE']) {
+                    const arPackages = this.ensureArray(packageGroup['AR-PACKAGE']);
+                    for (const arPackage of arPackages) {
+                        const packageResult = this.processArPackage(arPackage, output, '');
+                        if (packageResult.hasEcuc) {
+                            hasEcucContent = true;
+                        }
+                    }
+                }
             }
+        }
+        
+        // If no ECUC content was found, show disclaimer
+        if (!hasEcucContent) {
+            output.length = 0; // Clear existing output
+            output.push(`// ⚠️  ARXML Reader Disclaimer\n`);
+            output.push(`// \n`);
+            output.push(`// Despite the name "ARXML Reader", this extension currently supports\n`);
+            output.push(`// only ECUC (ECU Configuration) values within ARXML files.\n`);
+            output.push(`// \n`);
+            output.push(`// This file does not contain supported ECUC elements:\n`);
+            output.push(`//   ✓ ECUC-MODULE-CONFIGURATION-VALUES\n`);
+            output.push(`//   ✓ ECUC-CONTAINER-VALUE\n`);
+            output.push(`//   ✓ ECUC-NUMERICAL-PARAM-VALUE\n`);
+            output.push(`//   ✓ ECUC-TEXTUAL-PARAM-VALUE\n`);
+            output.push(`//   ✓ ECUC-REFERENCE-VALUE\n`);
+            output.push(`// \n`);
+            output.push(`// Other AUTOSAR elements (software components, interfaces, data types,\n`);
+            output.push(`// system descriptions, etc.) will be supported in future versions.\n`);
+            output.push(`// \n`);
+            output.push(`// 👉 Use "Show Original XML" command to view the raw ARXML content.\n`);
+            output.push(`// \n`);
+            output.push(`// This file contains:\n`);
+            this.analyzeUnsupportedContent(xmlObj, output);
+        }
 
-            // Process AR-PACKAGES
-            if (autosar['AR-PACKAGES']) {
-                const packages = this.ensureArray(autosar['AR-PACKAGES']);
-                for (const packageGroup of packages) {
-                    if (packageGroup['AR-PACKAGE']) {
-                        const arPackages = this.ensureArray(packageGroup['AR-PACKAGE']);
-                        for (const arPackage of arPackages) {
-                            this.processArPackage(arPackage, output, '');
+        return output.join('');
+    }
+
+    private checkForEcucContent(xmlObj: any): boolean {
+        if (!xmlObj.AUTOSAR) {
+            return false;
+        }
+
+        const autosar = xmlObj.AUTOSAR;
+        
+        // Process AR-PACKAGES
+        if (autosar['AR-PACKAGES']) {
+            const packages = this.ensureArray(autosar['AR-PACKAGES']);
+            for (const packageGroup of packages) {
+                if (packageGroup['AR-PACKAGE']) {
+                    const arPackages = this.ensureArray(packageGroup['AR-PACKAGE']);
+                    for (const arPackage of arPackages) {
+                        if (this.packageHasEcucContent(arPackage)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    private packageHasEcucContent(arPackage: any): boolean {
+        // Check ELEMENTS for ECUC content
+        if (arPackage.ELEMENTS && arPackage.ELEMENTS[0]) {
+            const elements = arPackage.ELEMENTS[0];
+            
+            // Check for ECUC-MODULE-CONFIGURATION-VALUES
+            if (elements['ECUC-MODULE-CONFIGURATION-VALUES']) {
+                return true;
+            }
+        }
+
+        // Check sub-packages recursively
+        if (arPackage['AR-PACKAGES']) {
+            const subPackages = this.ensureArray(arPackage['AR-PACKAGES']);
+            for (const subPackageGroup of subPackages) {
+                if (subPackageGroup['AR-PACKAGE']) {
+                    const subArPackages = this.ensureArray(subPackageGroup['AR-PACKAGE']);
+                    for (const subArPackage of subArPackages) {
+                        if (this.packageHasEcucContent(subArPackage)) {
+                            return true;
                         }
                     }
                 }
             }
         }
 
-        return output.join('');
+        return false;
     }
 
-    private processArPackage(arPackage: any, output: string[], packagePath: string): void {
+    private processArPackage(arPackage: any, output: string[], packagePath: string): { hasEcuc: boolean } {
         const shortName = arPackage['SHORT-NAME']?.[0] || '';
         const currentPath = packagePath ? `${packagePath}.${shortName}` : shortName;
+        let hasEcucContent = false;
         
         // Only output package line if this package contains ELEMENTS
-        let hasElements = false;
         if (arPackage.ELEMENTS) {
-            hasElements = true;
-            output.push(`package ${currentPath}\n\n`);
-            
-            const elements = this.ensureArray(arPackage.ELEMENTS);
-            for (const element of elements) {
-                this.processElements(element, output, 0);
+            const elementResult = this.processElements(arPackage.ELEMENTS, output, 0);
+            if (elementResult.hasEcuc) {
+                hasEcucContent = true;
+                output.push(`package ${currentPath}\n\n`);
+                // Re-process elements to actually output content now that we know it has ECUC
+                this.processElements(arPackage.ELEMENTS, output, 0);
             }
         }
 
@@ -99,25 +224,38 @@ export class ArxmlConverter {
                 if (packageGroup['AR-PACKAGE']) {
                     const nestedArPackages = this.ensureArray(packageGroup['AR-PACKAGE']);
                     for (const nestedPackage of nestedArPackages) {
-                        this.processArPackage(nestedPackage, output, currentPath);
+                        const nestedResult = this.processArPackage(nestedPackage, output, currentPath);
+                        if (nestedResult.hasEcuc) {
+                            hasEcucContent = true;
+                        }
                     }
                 }
             }
         }
+        
+        return { hasEcuc: hasEcucContent };
     }
 
-    private processElements(elements: any, output: string[], depth: number): void {
-        if (elements['ECUC-MODULE-CONFIGURATION-VALUES']) {
-            let modules = this.ensureArray(elements['ECUC-MODULE-CONFIGURATION-VALUES']);
-            
-            if (this.options.sort === 'all') {
-                modules = this.sortModules(modules);
-            }
+    private processElements(elements: any, output: string[], depth: number): { hasEcuc: boolean } {
+        const elementsArray = this.ensureArray(elements);
+        let hasEcucContent = false;
+        
+        for (const element of elementsArray) {
+            if (element['ECUC-MODULE-CONFIGURATION-VALUES']) {
+                hasEcucContent = true;
+                let modules = this.ensureArray(element['ECUC-MODULE-CONFIGURATION-VALUES']);
+                
+                if (this.options.sort === 'all') {
+                    modules = this.sortModules(modules);
+                }
 
-            for (const module of modules) {
-                this.processEcucModule(module, output, depth);
+                for (const module of modules) {
+                    this.processEcucModule(module, output, depth);
+                }
             }
         }
+        
+        return { hasEcuc: hasEcucContent };
     }
 
     private processEcucModule(module: any, output: string[], depth: number): void {
@@ -364,20 +502,48 @@ export class ArxmlConverter {
     private appendGstStuff(element: any): string {
         let result = '';
         
-        // System conditions
+        // System conditions - check both direct and variation point nested
         if (element['SW-SYSCOND']) {
             const syscond = element['SW-SYSCOND'][0];
-            result += ` [${syscond.trim()}]`;
+            const syscondText = typeof syscond === 'string' ? syscond : (syscond?._ || syscond || '');
+            if (syscondText && typeof syscondText === 'string') {
+                result += ` [${syscondText.trim()}]`;
+            }
+        } else if (element['VARIATION-POINT']) {
+            // Handle variation points with nested conditions
+            const variationPoints = this.ensureArray(element['VARIATION-POINT']);
+            for (const vp of variationPoints) {
+                if (vp['SW-SYSCOND']) {
+                    const syscond = vp['SW-SYSCOND'][0];
+                    const syscondText = typeof syscond === 'string' ? syscond : (syscond?._ || syscond || '');
+                    if (syscondText && typeof syscondText === 'string') {
+                        result += ` [${syscondText.trim()}]`;
+                    }
+                }
+                // Also check for post-build variant conditions in variation points
+                if (vp['POST-BUILD-VARIANT-CONDITION']) {
+                    const conditions = this.ensureArray(vp['POST-BUILD-VARIANT-CONDITION']);
+                    const conditionStrings = conditions.map(cond => {
+                        const criterionRef = cond['MATCHING-CRITERION-REF']?.[0] || '';
+                        const value = cond.VALUE?.[0] || '';
+                        const criterionName = this.lastShortName(criterionRef);
+                        const valueText = typeof value === 'string' ? value : (value?._ || value || '');
+                        return `${criterionName} == ${valueText}`;
+                    });
+                    result += ` <${conditionStrings.join(' && ')}>`;
+                }
+            }
         }
 
-        // Post-build variant conditions
+        // Post-build variant conditions (direct)
         if (element['POST-BUILD-VARIANT-CONDITION']) {
             const conditions = this.ensureArray(element['POST-BUILD-VARIANT-CONDITION']);
             const conditionStrings = conditions.map(cond => {
                 const criterionRef = cond['MATCHING-CRITERION-REF']?.[0] || '';
                 const value = cond.VALUE?.[0] || '';
                 const criterionName = this.lastShortName(criterionRef);
-                return `${criterionName} == ${value.trim()}`;
+                const valueText = typeof value === 'string' ? value : (value?._ || value || '');
+                return `${criterionName} == ${valueText}`;
             });
             result += ` <${conditionStrings.join(' && ')}>`;
         }
@@ -493,5 +659,47 @@ export class ArxmlConverter {
         
         const contentKey = shortName || value || valueRef || valueIref || '';
         return `${definitionRef}"${contentKey}"`;
+    }
+
+    private analyzeUnsupportedContent(xmlObj: any, output: string[]): void {
+        if (xmlObj.AUTOSAR && xmlObj.AUTOSAR['AR-PACKAGES']) {
+            const packages = this.ensureArray(xmlObj.AUTOSAR['AR-PACKAGES']);
+            const elementTypes = new Set<string>();
+            
+            this.collectElementTypes(packages, elementTypes);
+            
+            if (elementTypes.size > 0) {
+                output.push(`// Found elements: ${Array.from(elementTypes).join(', ')}\n`);
+            } else {
+                output.push(`// No recognizable AUTOSAR elements found in this file.\n`);
+            }
+        }
+    }
+    
+    private collectElementTypes(packages: any[], elementTypes: Set<string>): void {
+        for (const packageGroup of packages) {
+            if (packageGroup['AR-PACKAGE']) {
+                const arPackages = this.ensureArray(packageGroup['AR-PACKAGE']);
+                for (const arPackage of arPackages) {
+                    // Check for ELEMENTS
+                    if (arPackage.ELEMENTS) {
+                        const elementsArray = this.ensureArray(arPackage.ELEMENTS);
+                        for (const element of elementsArray) {
+                            // Add all element type names to the set
+                            Object.keys(element).forEach(key => {
+                                if (key !== '$' && key !== '_') {
+                                    elementTypes.add(key);
+                                }
+                            });
+                        }
+                    }
+                    
+                    // Recursively check nested packages
+                    if (arPackage['AR-PACKAGES']) {
+                        this.collectElementTypes(this.ensureArray(arPackage['AR-PACKAGES']), elementTypes);
+                    }
+                }
+            }
+        }
     }
 }

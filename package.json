@@ -1,7 +1,7 @@
 {
   "name": "arxml-reader",
   "displayName": "ARXML Reader",
-  "description": "Enhanced ARXML file viewer for AUTOSAR development with ECUC and NVM support",
+  "description": "Enhanced ARXML file viewer for AUTOSAR ECUC configuration values. (Note: Despite the name 'ARXML Reader', currently supports ECUC elements only - comprehensive ARXML support coming in future versions!)",
   "version": "0.0.1",
   "publisher": "sybinh",
   "engines": {
@@ -16,6 +16,7 @@
     "*",
     "onCommand:arxml-reader.openAsReadable",
     "onCommand:arxml-reader.showOriginalXml", 
+    "onCommand:arxml-reader.showReadableText",
     "onCommand:arxml-reader.changeOpenMode",
     "onCommand:arxml-reader.clearCache",
     "onCommand:arxml-reader.showCacheStats",
@@ -56,6 +57,11 @@
         "icon": "$(file-code)"
       },
       {
+        "command": "arxml-reader.showReadableText",
+        "title": "Show Readable Text",
+        "icon": "$(eye)"
+      },
+      {
         "command": "arxml-reader.changeOpenMode",
         "title": "Change ARXML Open Mode",
         "icon": "$(settings-gear)"
@@ -77,12 +83,22 @@
           "when": "resourceExtname == .arxml",
           "command": "arxml-reader.showOriginalXml",
           "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .arxml",
+          "command": "arxml-reader.showReadableText",
+          "group": "navigation"
         }
       ],
       "explorer/context": [
         {
           "when": "resourceExtname == .arxml",
           "command": "arxml-reader.showOriginalXml",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .arxml",
+          "command": "arxml-reader.showReadableText",
           "group": "navigation"
         }
       ]
@@ -103,7 +119,7 @@
         },
         "arxml-reader.maxFileSize": {
           "type": "number",
-          "default": 10,
+          "default": 50,
           "description": "Maximum file size in MB to process automatically (larger files will show warning)"
         },
         "arxml-reader.enableCaching": {
