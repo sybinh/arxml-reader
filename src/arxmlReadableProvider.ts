@@ -77,7 +77,10 @@ export class ArxmlReadableProvider implements vscode.TextDocumentContentProvider
                     progress.report({ increment: 0, message: 'Starting conversion...' });
                     
                     // Convert in chunks to allow cancellation
-                    const converter = new ArxmlConverter();
+                    const converterOptions: ArxmlConverterOptions = {
+                        maxFileSizeMB: config.get<number>('maxFileSize', 50)
+                    };
+                    const converter = new ArxmlConverter(converterOptions);
                     
                     // Check for cancellation
                     if (progressToken.isCancellationRequested || token.isCancellationRequested) {
@@ -93,7 +96,10 @@ export class ArxmlReadableProvider implements vscode.TextDocumentContentProvider
                 });
             } else {
                 // Convert smaller files normally
-                const converter = new ArxmlConverter();
+                const converterOptions: ArxmlConverterOptions = {
+                    maxFileSizeMB: config.get<number>('maxFileSize', 50)
+                };
+                const converter = new ArxmlConverter(converterOptions);
                 readableContent = await converter.convertToArtext(xmlContent);
             }
             
@@ -141,7 +147,11 @@ export class ArxmlReadableProvider implements vscode.TextDocumentContentProvider
             const xmlContent = document.getText();
             
             // Create converter and check for ECUC content
-            const converter = new ArxmlConverter();
+            const config = vscode.workspace.getConfiguration('arxml-reader');
+            const converterOptions: ArxmlConverterOptions = {
+                maxFileSizeMB: config.get<number>('maxFileSize', 50)
+            };
+            const converter = new ArxmlConverter(converterOptions);
             return await converter.hasEcucContent(xmlContent);
         } catch (error) {
             console.error('Error checking ECUC content:', error);

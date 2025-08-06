@@ -3,6 +3,7 @@ import { parseString } from 'xml2js';
 export interface ArxmlConverterOptions {
     sort?: 'all' | 'none';
     except?: string[];
+    maxFileSizeMB?: number;
 }
 
 export class ArxmlConverter {
@@ -11,38 +12,64 @@ export class ArxmlConverter {
     constructor(options: ArxmlConverterOptions = {}) {
         this.options = {
             sort: options.sort || 'none',
-            except: options.except || []
+            except: options.except || [],
+            maxFileSizeMB: options.maxFileSizeMB || 50
         };
     }
 
     async convertToArtext(xmlContent: string): Promise<string> {
         return new Promise((resolve, reject) => {
-            // Use faster parsing options for large files
+            // Simple and fast parsing options
             const parserOptions = {
                 explicitArray: true,
                 mergeAttrs: false,
                 explicitRoot: true,
-                async: true, // Enable async parsing
-                normalizeTags: false,
-                normalize: false,
-                explicitCharkey: false,
                 trim: true,
-                ignoreAttrs: false
+                ignoreAttrs: false,
+                async: false, // Use sync parsing to avoid callback issues
+                strict: false,
+                normalize: false
             };
             
-            parseString(xmlContent, parserOptions, (err, result) => {
-                if (err) {
-                    reject(err);
+            try {
+                // Add size check before parsing - use configurable limit
+                const maxSizeBytes = (this.options.maxFileSizeMB || 50) * 1024 * 1024;
+                if (xmlContent.length > maxSizeBytes) {
+                    const fileSizeMB = Math.round(xmlContent.length / 1024 / 1024);
+                    const limitMB = this.options.maxFileSizeMB || 50;
+                    const fallbackText = `// ❌ Error: File is too large (${fileSizeMB}MB)\n// \n// Files larger than ${limitMB}MB are not supported to prevent memory issues.\n// \n// 💡 You can increase the limit in VS Code settings:\n//    arxml-reader.maxFileSize = ${limitMB + 50}\n// \n// 💡 Or use "Show Original XML" to view the raw content.\n`;
+                    resolve(fallbackText);
                     return;
                 }
+                
+                parseString(xmlContent, parserOptions, (err: any, result: any) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
 
-                try {
-                    const artext = this.transformToArtext(result);
-                    resolve(artext);
-                } catch (error) {
-                    reject(error);
+                    try {
+                        const artext = this.transformToArtext(result);
+                        resolve(artext);
+                    } catch (error: any) {
+                        // Handle stack overflow specifically
+                        if (error instanceof RangeError && error.message.includes('Maximum call stack size exceeded')) {
+                            const fallbackText = `// ❌ Error: File structure is too deeply nested for safe processing.\n// \n// This indicates extremely deep nesting that exceeds JavaScript limits.\n// \n// 💡 Please use "Show Original XML" to view the raw content.\n// \n// Technical details: ${error.message}\n`;
+                            resolve(fallbackText);
+                        } else {
+                            reject(error);
+                        }
+                    }
+                });
+            } catch (parseError: any) {
+                // If parseString itself throws, handle it
+                if (parseError instanceof RangeError && parseError.message.includes('Maximum call stack size exceeded')) {
+                    const fallbackText = `// ❌ Error: XML parsing failed due to excessive complexity.\n// \n// The file structure exceeds safe processing limits.\n// \n// 💡 Please use "Show Original XML" to view the raw content.\n`;
+                    resolve(fallbackText);
+                } else {
+                    reject(parseError);
                 }
-            });
+            }
         });
     }
 
@@ -55,27 +82,46 @@ export class ArxmlConverter {
                 explicitArray: true,
                 mergeAttrs: false,
                 explicitRoot: true,
-                async: true,
-                normalizeTags: false,
-                normalize: false,
-                explicitCharkey: false,
                 trim: true,
-                ignoreAttrs: false
+                ignoreAttrs: false,
+                async: false,
+                strict: false
             };
             
-            parseString(xmlContent, parserOptions, (err, result) => {
-                if (err) {
-                    reject(err);
+            try {
+                // Quick size check - use configurable limit
+                const maxSizeBytes = (this.options.maxFileSizeMB || 50) * 1024 * 1024;
+                if (xmlContent.length > maxSizeBytes) {
+                    resolve(true); // Assume large files have ECUC content
                     return;
                 }
+                
+                parseString(xmlContent, parserOptions, (err: any, result: any) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
 
-                try {
-                    const hasEcuc = this.checkForEcucContent(result);
-                    resolve(hasEcuc);
-                } catch (error) {
-                    reject(error);
+                    try {
+                        const hasEcuc = this.checkForEcucContent(result);
+                        resolve(hasEcuc);
+                    } catch (error: any) {
+                        // If we can't check due to complexity, assume it has content
+                        if (error instanceof RangeError && error.message.includes('Maximum call stack size exceeded')) {
+                            console.warn('Stack overflow during ECUC content check, assuming content exists');
+                            resolve(true);
+                        } else {
+                            reject(error);
+                        }
+                    }
+                });
+            } catch (parseError: any) {
+                if (parseError instanceof RangeError && parseError.message.includes('Maximum call stack size exceeded')) {
+                    resolve(true); // Assume complex files have ECUC content
+                } else {
+                    reject(parseError);
                 }
-            });
+            }
         });
     }
 
@@ -111,7 +157,7 @@ export class ArxmlConverter {
                 if (packageGroup['AR-PACKAGE']) {
                     const arPackages = this.ensureArray(packageGroup['AR-PACKAGE']);
                     for (const arPackage of arPackages) {
-                        const packageResult = this.processArPackage(arPackage, output, '');
+                        const packageResult = this.processArPackage(arPackage, output, '', 0);
                         if (packageResult.hasEcuc) {
                             hasEcucContent = true;
                         }
@@ -201,30 +247,43 @@ export class ArxmlConverter {
         return false;
     }
 
-    private processArPackage(arPackage: any, output: string[], packagePath: string): { hasEcuc: boolean } {
+    private processArPackage(arPackage: any, output: string[], packagePath: string, depth: number = 0): { hasEcuc: boolean } {
+        // Prevent infinite recursion and stack overflow
+        if (depth > 20) {
+            console.warn('Maximum package nesting depth reached, skipping deeper levels');
+            return { hasEcuc: false };
+        }
+
         const shortName = arPackage['SHORT-NAME']?.[0] || '';
         const currentPath = packagePath ? `${packagePath}.${shortName}` : shortName;
         let hasEcucContent = false;
         
-        // Only output package line if this package contains ELEMENTS
+        // Use a temporary buffer to collect output - only commit if ECUC content is found
+        const tempOutput: string[] = [];
+        
+        // Process elements into temporary buffer
         if (arPackage.ELEMENTS) {
-            const elementResult = this.processElements(arPackage.ELEMENTS, output, 0);
+            const elementResult = this.processElements(arPackage.ELEMENTS, tempOutput, 0);
             if (elementResult.hasEcuc) {
                 hasEcucContent = true;
-                output.push(`package ${currentPath}\n\n`);
-                // Re-process elements to actually output content now that we know it has ECUC
-                this.processElements(arPackage.ELEMENTS, output, 0);
+                // Commit temporary output to main output with package header
+                output.push(`package ${currentPath}\n`);
+                // Use iteration instead of spread operator to avoid stack issues
+                for (const line of tempOutput) {
+                    output.push(line);
+                }
+                output.push('\n');
             }
         }
 
-        // Process nested AR-PACKAGEs
-        if (arPackage['AR-PACKAGES']) {
+        // Process nested AR-PACKAGEs with depth control
+        if (arPackage['AR-PACKAGES'] && depth < 20) {
             const nestedPackages = this.ensureArray(arPackage['AR-PACKAGES']);
             for (const packageGroup of nestedPackages) {
                 if (packageGroup['AR-PACKAGE']) {
                     const nestedArPackages = this.ensureArray(packageGroup['AR-PACKAGE']);
                     for (const nestedPackage of nestedArPackages) {
-                        const nestedResult = this.processArPackage(nestedPackage, output, currentPath);
+                        const nestedResult = this.processArPackage(nestedPackage, output, currentPath, depth + 1);
                         if (nestedResult.hasEcuc) {
                             hasEcucContent = true;
                         }
@@ -464,6 +523,53 @@ export class ArxmlConverter {
                 }
             }
         }
+    }
+
+    // Helper methods to handle different XML parser output formats
+    private getShortName(element: any): string {
+        if (element['SHORT-NAME']) {
+            const shortName = element['SHORT-NAME'];
+            return Array.isArray(shortName) ? shortName[0] : shortName;
+        }
+        return '';
+    }
+
+    private getDefinitionRef(element: any): string {
+        if (element['DEFINITION-REF']) {
+            const defRef = element['DEFINITION-REF'];
+            if (Array.isArray(defRef)) {
+                const firstRef = defRef[0];
+                return (typeof firstRef === 'string') ? firstRef : (firstRef['#text'] || firstRef['@_DEST'] || firstRef);
+            } else if (typeof defRef === 'string') {
+                return defRef;
+            } else {
+                return defRef['#text'] || defRef['@_DEST'] || defRef;
+            }
+        }
+        return '';
+    }
+
+    private getValue(element: any): string {
+        if (element.VALUE) {
+            const value = element.VALUE;
+            return Array.isArray(value) ? value[0] : value;
+        }
+        return '';
+    }
+
+    private getValueRef(element: any): string {
+        if (element['VALUE-REF']) {
+            const valueRef = element['VALUE-REF'];
+            if (Array.isArray(valueRef)) {
+                const firstRef = valueRef[0];
+                return (typeof firstRef === 'string') ? firstRef : (firstRef['#text'] || firstRef['@_DEST'] || firstRef);
+            } else if (typeof valueRef === 'string') {
+                return valueRef;
+            } else {
+                return valueRef['#text'] || valueRef['@_DEST'] || valueRef;
+            }
+        }
+        return '';
     }
 
     // Utility methods

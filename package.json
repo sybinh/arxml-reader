@@ -15,7 +15,7 @@
   "activationEvents": [
     "*",
     "onCommand:arxml-reader.openAsReadable",
-    "onCommand:arxml-reader.showOriginalXml", 
+    "onCommand:arxml-reader.showOriginalXml",
     "onCommand:arxml-reader.showReadableText",
     "onCommand:arxml-reader.changeOpenMode",
     "onCommand:arxml-reader.clearCache",
@@ -27,14 +27,24 @@
     "languages": [
       {
         "id": "artext",
-        "aliases": ["Artext", "artext"],
-        "extensions": [".artext"],
+        "aliases": [
+          "Artext",
+          "artext"
+        ],
+        "extensions": [
+          ".artext"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "arxml",
-        "aliases": ["ARXML", "arxml"],
-        "extensions": [".arxml"],
+        "aliases": [
+          "ARXML",
+          "arxml"
+        ],
+        "extensions": [
+          ".arxml"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -108,7 +118,11 @@
       "properties": {
         "arxml-reader.openMode": {
           "type": "string",
-          "enum": ["both", "readable-only", "original-only"],
+          "enum": [
+            "both",
+            "readable-only",
+            "original-only"
+          ],
           "enumDescriptions": [
             "Open both original XML and readable text (as tabs)",
             "Open only the readable text format",
