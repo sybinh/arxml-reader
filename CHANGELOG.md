@@ -28,3 +28,23 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **Interactive UI**: Toolbar with refresh and sort options
 - **Syntax Highlighting**: Color-coded display for better readability
 - **TypeScript Implementation**: Modern TypeScript codebase with proper error handling
+
+## [0.0.2] - 2025-08-06
+
+### Fixed
+- **Critical**: Fixed "Maximum call stack size exceeded" error for large/deeply nested ARXML files
+- **Critical**: Fixed content duplication bug where ECUC elements appeared twice in output
+- Added comprehensive stack overflow protection with configurable limits
+- Added file size limits (configurable via `arxml-reader.maxFileSize` setting)
+- Enhanced error handling with user-friendly messages instead of crashes
+
+### Added
+- Configurable file size limit with smart error messages
+- Recursion depth protection (20 levels for packages, 50 for containers)
+- Better integration with VS Code configuration system
+- Graceful fallback handling for problematic files
+
+### Changed
+- Improved memory management and performance for large files
+- Enhanced error messages with helpful troubleshooting suggestions
+- Default file size limit set to 50MB (configurable)
