@@ -2,7 +2,7 @@
   "name": "arxml-reader",
   "displayName": "ARXML Reader",
   "description": "Enhanced ARXML file viewer for AUTOSAR ECUC configuration values. (Note: Despite the name 'ARXML Reader', currently supports ECUC elements only - comprehensive ARXML support coming in future versions!)",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "sybinh",
   "engines": {
     "vscode": "^1.54.0"
