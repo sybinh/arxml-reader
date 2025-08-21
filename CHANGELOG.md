@@ -4,6 +4,40 @@ All notable changes to the "arxml-reader" extension will be documented in this f
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.3] - 2025-01-24
+
+### Added
+- **Comprehensive Test Automation**: Added regression test suite covering 10 key scenarios
+- **Local Test Runner**: Created `scripts/test-runner.js` for development workflow automation
+- **CI/CD Pipeline**: GitHub Actions workflow for automated testing, linting, and packaging
+- **Pre-commit Hooks**: PowerShell script for local quality gates
+
+### Fixed
+- **Stack Overflow Protection**: Fixed infinite recursion issues with deeply nested ARXML files
+- **Duplication Bug**: Eliminated duplicate entries in converted output
+- **HTML Entity Handling**: Proper decoding of HTML entities (e.g., `&amp;&amp;` → `&&`)
+- **Complex System Conditions**: Correct parsing of SW-SYSCOND with multiple SYSC-REFs and operators
+- **Error Handling**: Improved user-facing error messages for large/complex files
+
+### Enhanced
+- **File Size Limits**: Made configurable via VS Code settings (`arxml-reader.maxFileSize`)
+- **Performance**: Optimized conversion for large ARXML files
+- **Non-ECUC Support**: Better handling with informative disclaimers for unsupported content
+- **Test Coverage**: 10 regression tests ensuring robustness and reliability
+
+### Technical Improvements
+- **Stack Safety**: Depth-limited recursion and iterative processing where possible
+- **Memory Management**: Size-based processing limits to prevent memory issues
+- **Robust Parsing**: Enhanced XML parsing with fallback mechanisms
+- **Documentation**: Comprehensive test documentation and setup guides
+
+## [0.0.2] - 2025-01-24
+
+### Added
+- Improved ARXML parsing and conversion logic
+- Enhanced error handling for malformed XML
+- Better support for complex ECUC structures
+
 ## [0.0.1] - 2025-01-24
 
 ### Added

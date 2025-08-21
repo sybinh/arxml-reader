@@ -104,13 +104,68 @@ module RB.RBA.rba_Nds.EcucModuleDefs.rba_Nds "rba_Nds"
 ✅ **Automatic**: No extra steps needed  
 ✅ **Fast**: Lightweight text documents vs heavy webviews  
 ✅ **Familiar**: Standard VS Code experience  
+✅ **Reliable**: Comprehensive test automation with 10 regression tests  
+✅ **Robust**: Stack overflow protection and configurable file size limits  
+✅ **Quality Assured**: CI/CD pipeline ensures stability  
+
+## Configuration
+
+The extension provides several configurable options:
+
+### File Size Limits
+```json
+{
+  "arxml-reader.maxFileSize": 50
+}
+```
+Maximum file size in MB. Files larger than this limit will show a size warning instead of conversion. Increase this value for larger files, but be aware of potential memory usage.
 
 ## Requirements
 
 - VS Code 1.54.0 or higher
 - ARXML files following AUTOSAR specification
 
+## Development & Testing
+
+This extension includes comprehensive test automation:
+
+- **10 Regression Tests**: Covering all core functionality and edge cases
+- **Local Test Runner**: `npm run test:local` for complete validation  
+- **CI/CD Pipeline**: Automated testing on every commit
+- **Performance Benchmarks**: Ensures conversion speed remains optimal
+- **Pre-commit Hooks**: Local quality gates for development
+
+### Running Tests Locally
+```bash
+npm run test:regression    # Run regression tests
+npm run test:local        # Complete test suite
+npm run test:performance  # Performance benchmarks
+```
+
 ## Release Notes
+
+### 0.0.3 (Current)
+
+**Major Improvements:**
+- Fixed stack overflow issues with deeply nested ARXML files
+- Eliminated duplication bugs in converted output
+- Added comprehensive test automation (10 regression tests)
+- Implemented CI/CD pipeline with GitHub Actions
+- Made file size limits configurable via VS Code settings
+- Enhanced error handling with user-friendly messages
+- Improved complex system condition parsing (SW-SYSCOND with multiple operators)
+
+**Technical Enhancements:**
+- Stack overflow protection with depth-limited recursion
+- HTML entity decoding for proper operator display
+- Local test runner for development workflow
+- Pre-commit hooks for code quality
+
+### 0.0.2
+
+- Improved ARXML parsing and conversion logic
+- Enhanced error handling for malformed XML
+- Better support for complex ECUC structures
 
 ### 0.0.1
 
