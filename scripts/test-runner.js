@@ -21,7 +21,7 @@ class LocalTestRunner {
 
     async run() {
         console.log('🧪 ARXML Reader - Local Test Runner');
-        console.log('=' * 50);
+        console.log('='.repeat(50));
         
         try {
             await this.runCompilation();
@@ -156,7 +156,7 @@ class LocalTestRunner {
 
     async execCommand(command, args = []) {
         return new Promise((resolve, reject) => {
-            const process = spawn(command, args, { 
+            const childProcess = spawn(command, args, { 
                 stdio: ['inherit', 'pipe', 'pipe'],
                 shell: process.platform === 'win32'
             });
@@ -164,15 +164,15 @@ class LocalTestRunner {
             let stdout = '';
             let stderr = '';
             
-            process.stdout.on('data', (data) => {
+            childProcess.stdout.on('data', (data) => {
                 stdout += data.toString();
             });
             
-            process.stderr.on('data', (data) => {
+            childProcess.stderr.on('data', (data) => {
                 stderr += data.toString();
             });
             
-            process.on('close', (code) => {
+            childProcess.on('close', (code) => {
                 if (code === 0) {
                     resolve({ stdout, stderr });
                 } else {
@@ -180,16 +180,16 @@ class LocalTestRunner {
                 }
             });
             
-            process.on('error', (error) => {
+            childProcess.on('error', (error) => {
                 reject(error);
             });
         });
     }
 
     printSummary() {
-        console.log('\n' + '=' * 50);
+        console.log('\n' + '='.repeat(50));
         console.log('📊 Test Summary');
-        console.log('=' * 50);
+        console.log('='.repeat(50));
         
         Object.entries(this.testResults).forEach(([test, passed]) => {
             const icon = passed ? '✅' : '❌';
