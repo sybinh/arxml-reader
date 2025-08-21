@@ -160,7 +160,16 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "test:regression": "node tests/regression-test.js",
+    "test:performance": "node scripts/test-runner.js",
+    "test:all": "npm run test:regression && npm run test",
+    "test:watch": "nodemon --watch src --ext ts --exec \"npm run compile && npm run test:regression\"",
+    "test:ci": "npm run compile && node tests/regression-test.js",
+    "test:local": "node scripts/test-runner.js",
+    "verify": "npm run compile && npm run lint && npm run test:regression",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

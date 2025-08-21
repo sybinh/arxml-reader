@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "test": "node test-regression.js",
+    "test:watch": "nodemon --watch src --ext ts --exec \"npm run compile && npm test\"",
+    "test:ci": "npm run compile && node test-regression.js",
+    "pretest": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  }
+}

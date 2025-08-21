@@ -611,9 +611,9 @@ export class ArxmlConverter {
         // System conditions - check both direct and variation point nested
         if (element['SW-SYSCOND']) {
             const syscond = element['SW-SYSCOND'][0];
-            const syscondText = typeof syscond === 'string' ? syscond : (syscond?._ || syscond || '');
-            if (syscondText && typeof syscondText === 'string') {
-                result += ` [${syscondText.trim()}]`;
+            const syscondText = this.parseSystemCondition(syscond);
+            if (syscondText) {
+                result += ` [${syscondText}]`;
             }
         } else if (element['VARIATION-POINT']) {
             // Handle variation points with nested conditions
@@ -621,9 +621,9 @@ export class ArxmlConverter {
             for (const vp of variationPoints) {
                 if (vp['SW-SYSCOND']) {
                     const syscond = vp['SW-SYSCOND'][0];
-                    const syscondText = typeof syscond === 'string' ? syscond : (syscond?._ || syscond || '');
-                    if (syscondText && typeof syscondText === 'string') {
-                        result += ` [${syscondText.trim()}]`;
+                    const syscondText = this.parseSystemCondition(syscond);
+                    if (syscondText) {
+                        result += ` [${syscondText}]`;
                     }
                 }
                 // Also check for post-build variant conditions in variation points
@@ -807,5 +807,88 @@ export class ArxmlConverter {
                 }
             }
         }
+    }
+
+    private parseSystemCondition(syscond: any): string {
+        if (!syscond) {
+            return '';
+        }
+        
+        // Handle simple string syscond
+        if (typeof syscond === 'string') {
+            return syscond.trim();
+        }
+        
+        // Handle syscond with SYSC-REF elements and operators
+        if (syscond['SYSC-REF']) {
+            const syscRefs = this.ensureArray(syscond['SYSC-REF']);
+            
+            if (syscRefs.length === 1) {
+                // Simple single reference
+                const syscRef = syscRefs[0];
+                const refPath = syscRef._ || syscRef;
+                return this.lastShortName(refPath);
+            } else if (syscRefs.length >= 2) {
+                // Complex condition with multiple references
+                let conditionText = '';
+                
+                // Get the first reference
+                const firstRef = syscRefs[0];
+                const firstRefPath = firstRef._ || firstRef;
+                conditionText += this.lastShortName(firstRefPath);
+                
+                // Parse the mixed content operators from the main _ property
+                if (syscond._) {
+                    const operators = syscond._.replace(/\s+/g, ' ').trim();
+                    
+                    // Handle pattern like "!=4&& ==1"
+                    if (operators.includes('&&')) {
+                        const parts = operators.split('&&');
+                        if (parts.length >= 2) {
+                            // First condition: DIAGCOM_NETVRNT_SC != 4
+                            conditionText += ` ${parts[0].trim()}`;
+                            conditionText += ' && ';
+                            
+                            // Second reference
+                            const secondRef = syscRefs[1];
+                            const secondRefPath = secondRef._ || secondRef;
+                            conditionText += this.lastShortName(secondRefPath);
+                            
+                            // Second condition: LIN_SY == 1
+                            if (parts[1].trim()) {
+                                conditionText += ` ${parts[1].trim()}`;
+                            }
+                        }
+                    } else {
+                        // Simple case with one operator
+                        conditionText += ` ${operators}`;
+                        if (syscRefs.length > 1) {
+                            const secondRef = syscRefs[1];
+                            const secondRefPath = secondRef._ || secondRef;
+                            conditionText += ` ${this.lastShortName(secondRefPath)}`;
+                        }
+                    }
+                } else {
+                    // No operators found, just list all references
+                    for (let i = 1; i < syscRefs.length; i++) {
+                        conditionText += ' && ';
+                        const ref = syscRefs[i];
+                        const refPath = ref._ || ref;
+                        conditionText += this.lastShortName(refPath);
+                    }
+                }
+                
+                return conditionText;
+            }
+        }
+        
+        // Fallback to simple text content
+        if (syscond._) {
+            return syscond._.trim();
+        }
+        
+        // Last resort - try to convert to string
+        const fallback = String(syscond).trim();
+        return fallback !== '[object Object]' ? fallback : '';
     }
 }
