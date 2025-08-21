@@ -37,4 +37,5 @@ Send me any issues you find - file size, error messages, or screenshots help.
 
 Thanks for testing!
 
-[Your Name]
+Best regards,
+ARXML Reader Development Team
