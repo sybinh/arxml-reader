@@ -1,15 +1,40 @@
 {
   "name": "arxml-reader",
   "displayName": "ARXML Reader",
-  "description": "Enhanced ARXML file viewer for AUTOSAR ECUC configuration values. (Note: Despite the name 'ARXML Reader', currently supports ECUC elements only - comprehensive ARXML support coming in future versions!)",
+  "description": "Enhanced ARXML file viewer for AUTOSAR ECUC configuration values. Converts ARXML files to readable text format with syntax highlighting and full VS Code editor features.",
   "version": "0.0.3",
   "publisher": "sybinh",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sybinh/arxml-reader.git"
+  },
+  "homepage": "https://github.com/sybinh/arxml-reader#readme",
+  "bugs": {
+    "url": "https://github.com/sybinh/arxml-reader/issues"
+  },
+  "license": "MIT",
+  "keywords": [
+    "arxml",
+    "autosar",
+    "ecuc",
+    "automotive",
+    "xml",
+    "configuration",
+    "viewer",
+    "converter",
+    "syntax highlighting"
+  ],
   "engines": {
     "vscode": "^1.54.0"
+  },
+  "galleryBanner": {
+    "color": "#007ACC",
+    "theme": "dark"
   },
   "categories": [
     "Programming Languages",
     "Formatters",
+    "Visualization",
     "Other"
   ],
   "activationEvents": [
